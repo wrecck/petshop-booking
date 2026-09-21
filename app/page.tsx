@@ -7,7 +7,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
-  Heart,
   MapPin,
   PawPrint,
   ShieldCheck,
@@ -15,83 +14,9 @@ import {
   Star,
   UserRound,
 } from "lucide-react";
-import { FormEvent, useMemo, useState } from "react";
-
-type Service = {
-  id: string;
-  name: string;
-  description: string;
-  duration: number;
-  price: number;
-};
-
-type Groomer = {
-  id: string;
-  name: string;
-  role: string;
-  initials: string;
-  color: string;
-  rating?: string;
-};
-
-const services: Service[] = [
-  {
-    id: "full-groom",
-    name: "The Full Groom",
-    description: "Bath, haircut, nail trim & finishing spritz",
-    duration: 90,
-    price: 85,
-  },
-  {
-    id: "bath-brush",
-    name: "Bath & Brush",
-    description: "Deep-cleansing bath, blow-dry & brush out",
-    duration: 60,
-    price: 55,
-  },
-  {
-    id: "puppy",
-    name: "Puppy’s First Visit",
-    description: "A gentle introduction for pups under 6 months",
-    duration: 45,
-    price: 45,
-  },
-];
-
-const groomers: Groomer[] = [
-  {
-    id: "any",
-    name: "Any available groomer",
-    role: "Best for the earliest appointment",
-    initials: "✦",
-    color: "sage",
-  },
-  {
-    id: "mia",
-    name: "Mia",
-    role: "Senior groomer",
-    initials: "MR",
-    color: "peach",
-    rating: "4.9",
-  },
-  {
-    id: "sam",
-    name: "Sam",
-    role: "Groomer & puppy specialist",
-    initials: "SL",
-    color: "blue",
-    rating: "5.0",
-  },
-];
-
-const timeSlots = [
-  "9:00 AM",
-  "10:30 AM",
-  "12:00 PM",
-  "1:30 PM",
-  "3:00 PM",
-  "4:30 PM",
-];
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { demoShopfront, DEMO_SHOP_SLUG } from "@/lib/demo-data";
+import type { AvailabilitySlot, Shopfront, Staff } from "@/lib/types";
 
 const monthFormatter = new Intl.DateTimeFormat("en-US", {
   month: "long",
@@ -122,7 +47,15 @@ function getCalendarDays(month: Date) {
   });
 }
 
-export default function BookingPage() {
+type BookingPageProps = {
+  shopSlug?: string;
+};
+
+type UiGroomer = Staff & { rating?: string };
+
+export default function BookingPage(props: BookingPageProps) {
+  const shopSlug = props.shopSlug ?? DEMO_SHOP_SLUG;
+  const demoMode = !props.shopSlug;
   const today = useMemo(() => {
     const date = new Date();
     date.setHours(0, 0, 0, 0);
@@ -134,24 +67,95 @@ export default function BookingPage() {
     return date;
   }, [today]);
 
-  const [serviceId, setServiceId] = useState("full-groom");
+  const [shopfront, setShopfront] = useState<Shopfront>(demoShopfront);
+  const [serviceId, setServiceId] = useState(demoShopfront.services[0].id);
   const [groomerId, setGroomerId] = useState("any");
   const [visibleMonth, setVisibleMonth] = useState(
     new Date(firstAvailable.getFullYear(), firstAvailable.getMonth(), 1),
   );
   const [selectedDate, setSelectedDate] = useState(firstAvailable);
-  const [selectedTime, setSelectedTime] = useState("10:30 AM");
+  const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(
+    null,
+  );
+  const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(true);
   const [showDetails, setShowDetails] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [bookingError, setBookingError] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [petName, setPetName] = useState("");
   const [email, setEmail] = useState("");
 
+  const services = shopfront.services;
+  const groomers: UiGroomer[] = [
+    {
+      id: "any",
+      shop_id: shopfront.shop.id,
+      name: "Any available groomer",
+      role: "Best for the earliest appointment",
+      initials: "✦",
+      color: "sage",
+    },
+    ...shopfront.staff,
+  ];
   const selectedService =
     services.find((service) => service.id === serviceId) ?? services[0];
   const selectedGroomer =
     groomers.find((groomer) => groomer.id === groomerId) ?? groomers[0];
   const calendarDays = getCalendarDays(visibleMonth);
+  const selectedTime = selectedSlot?.display_time ?? "";
+
+  useEffect(() => {
+    if (demoMode) return;
+    let active = true;
+    fetch(`/api/shops/${shopSlug}`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Shop not found.");
+        return (await response.json()) as Shopfront;
+      })
+      .then((data) => {
+        if (!active || data.services.length === 0) return;
+        setShopfront(data);
+        setServiceId(data.services[0].id);
+      })
+      .catch(() => {
+        if (shopSlug !== DEMO_SHOP_SLUG) setBookingError("Shop not found.");
+      });
+    return () => {
+      active = false;
+    };
+  }, [demoMode, shopSlug]);
+
+  useEffect(() => {
+    if (!serviceId) return;
+    const controller = new AbortController();
+    const date = `${selectedDate.getFullYear()}-${String(
+      selectedDate.getMonth() + 1,
+    ).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
+    const query = new URLSearchParams({
+      shop: shopSlug,
+      service: serviceId,
+      date,
+    });
+    if (demoMode) query.set("demo", "true");
+    if (groomerId !== "any") query.set("staff", groomerId);
+
+    setSlotsLoading(true);
+    setSelectedSlot(null);
+    fetch(`/api/availability?${query}`, { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Availability unavailable.");
+        return (await response.json()) as { slots: AvailabilitySlot[] };
+      })
+      .then(({ slots: availableSlots }) => setSlots(availableSlots))
+      .catch((error) => {
+        if (error instanceof Error && error.name !== "AbortError") setSlots([]);
+      })
+      .finally(() => setSlotsLoading(false));
+
+    return () => controller.abort();
+  }, [demoMode, groomerId, selectedDate, serviceId, shopSlug]);
 
   function isUnavailable(date: Date) {
     return (
@@ -164,13 +168,42 @@ export default function BookingPage() {
   function selectDate(date: Date) {
     if (isUnavailable(date)) return;
     setSelectedDate(date);
-    setSelectedTime("");
+    setSelectedSlot(null);
   }
 
-  function submitBooking(event: FormEvent<HTMLFormElement>) {
+  async function submitBooking(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setConfirmed(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (!selectedSlot) return;
+    setSubmitting(true);
+    setBookingError("");
+
+    try {
+      const response = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          shopSlug,
+          serviceId,
+          staffId: selectedSlot.staff_id,
+          startsAt: selectedSlot.starts_at,
+          customerName,
+          customerEmail: email,
+          petName,
+          petType: "Dog",
+          demo: demoMode,
+        }),
+      });
+      const result = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(result.error || "Booking failed.");
+      setConfirmed(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {
+      setBookingError(
+        error instanceof Error ? error.message : "Unable to book this time.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (confirmed) {
@@ -201,7 +234,7 @@ export default function BookingPage() {
               <UserRound size={19} />
               <span>
                 {selectedGroomer.id === "any"
-                  ? "First available groomer"
+                  ? `With ${selectedSlot?.staff_name ?? "our team"}`
                   : `With ${selectedGroomer.name}`}
               </span>
             </div>
@@ -227,20 +260,21 @@ export default function BookingPage() {
           <span className="brand-mark">
             <PawPrint size={20} fill="currentColor" />
           </span>
-          <span>
-            Paws <i>&</i> Co.
-          </span>
+          <span>{shopfront.shop.name}</span>
         </a>
         <div className="header-meta">
           <div>
-            <strong>Maple Street</strong>
+            <strong>{shopfront.shop.address ?? "Online booking"}</strong>
             <span>
-              <MapPin size={13} /> Portland, OR
+              <MapPin size={13} />{" "}
+              {[shopfront.shop.city, shopfront.shop.state]
+                .filter(Boolean)
+                .join(", ") || "Book your visit"}
             </span>
           </div>
-          <button aria-label="Save this pet shop">
-            <Heart size={20} />
-          </button>
+          <a className="owner-link" href="/login">
+            Owner login
+          </a>
         </div>
       </header>
 
@@ -289,10 +323,12 @@ export default function BookingPage() {
                     <strong>{service.name}</strong>
                     <small>{service.description}</small>
                     <span className="duration">
-                      <Clock3 size={14} /> {service.duration} min
+                      <Clock3 size={14} /> {service.duration_minutes} min
                     </span>
                   </span>
-                  <span className="price">${service.price}</span>
+                  <span className="price">
+                    ${(service.price_cents / 100).toFixed(0)}
+                  </span>
                 </button>
               ))}
             </div>
@@ -410,23 +446,34 @@ export default function BookingPage() {
               <div className="times">
                 <p>
                   <strong>{longDateFormatter.format(selectedDate)}</strong>
-                  <span>{timeSlots.length} times available</span>
+                  <span>
+                    {slotsLoading
+                      ? "Checking availability…"
+                      : `${slots.length} ${slots.length === 1 ? "time" : "times"} available`}
+                  </span>
                 </p>
                 <div className="time-grid">
-                  {timeSlots.map((time, index) => {
-                    const hidden = (selectedDate.getDate() + index) % 7 === 0;
-                    if (hidden) return null;
-                    return (
-                      <button
-                        className={selectedTime === time ? "selected" : ""}
-                        key={time}
-                        onClick={() => setSelectedTime(time)}
-                      >
-                        {time}
-                        {selectedTime === time && <Check size={15} />}
-                      </button>
-                    );
-                  })}
+                  {!slotsLoading && slots.length === 0 && (
+                    <p className="no-times">No openings on this date.</p>
+                  )}
+                  {slots.map((slot) => (
+                    <button
+                      className={
+                        selectedSlot?.starts_at === slot.starts_at &&
+                        selectedSlot?.staff_id === slot.staff_id
+                          ? "selected"
+                          : ""
+                      }
+                      key={`${slot.starts_at}-${slot.staff_id}`}
+                      onClick={() => setSelectedSlot(slot)}
+                    >
+                      {slot.display_time}
+                      {selectedSlot?.starts_at === slot.starts_at &&
+                        selectedSlot?.staff_id === slot.staff_id && (
+                          <Check size={15} />
+                        )}
+                    </button>
+                  ))}
                 </div>
                 <div className="timezone">
                   <ShieldCheck size={16} />
@@ -489,9 +536,9 @@ export default function BookingPage() {
             <span>
               <small>Service</small>
               <strong>{selectedService.name}</strong>
-              <em>{selectedService.duration} minutes</em>
+              <em>{selectedService.duration_minutes} minutes</em>
             </span>
-            <strong>${selectedService.price}</strong>
+            <strong>${(selectedService.price_cents / 100).toFixed(0)}</strong>
           </div>
           <div className="summary-item">
             <span className="summary-icon">
@@ -517,17 +564,19 @@ export default function BookingPage() {
               <strong>Total</strong>
               <small>Pay at the salon</small>
             </span>
-            <strong>${selectedService.price}</strong>
+            <strong>${(selectedService.price_cents / 100).toFixed(0)}</strong>
           </div>
+          {bookingError && <p className="booking-error">{bookingError}</p>}
           {showDetails ? (
             <>
               <button
                 className="primary-button"
                 form="booking-form"
                 type="submit"
-                disabled={!selectedTime}
+                disabled={!selectedSlot || submitting}
               >
-                Confirm booking <ChevronRight size={17} />
+                {submitting ? "Confirming…" : "Confirm booking"}
+                {!submitting && <ChevronRight size={17} />}
               </button>
               <button
                 className="back-button"
@@ -539,7 +588,7 @@ export default function BookingPage() {
           ) : (
             <button
               className="primary-button"
-              disabled={!selectedTime}
+              disabled={!selectedSlot}
               onClick={() => {
                 setShowDetails(true);
                 setTimeout(
@@ -564,7 +613,9 @@ export default function BookingPage() {
         <span>
           <PawPrint size={16} /> Paws & Co.
         </span>
-        <p>Questions? Call us at (503) 555-0142</p>
+        <p>
+          Questions? Call us at {shopfront.shop.phone ?? "your local shop"}
+        </p>
       </footer>
     </main>
   );
