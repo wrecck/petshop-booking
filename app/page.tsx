@@ -118,6 +118,8 @@ export default function BookingPage(props: BookingPageProps) {
         if (!active || data.services.length === 0) return;
         setShopfront(data);
         setServiceId(data.services[0].id);
+        setSelectedSlot(null);
+        setSlotsLoading(true);
       })
       .catch(() => {
         if (shopSlug !== DEMO_SHOP_SLUG) setBookingError("Shop not found.");
@@ -141,8 +143,6 @@ export default function BookingPage(props: BookingPageProps) {
     if (demoMode) query.set("demo", "true");
     if (groomerId !== "any") query.set("staff", groomerId);
 
-    setSlotsLoading(true);
-    setSelectedSlot(null);
     fetch(`/api/availability?${query}`, { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error("Availability unavailable.");
@@ -169,6 +169,19 @@ export default function BookingPage(props: BookingPageProps) {
     if (isUnavailable(date)) return;
     setSelectedDate(date);
     setSelectedSlot(null);
+    setSlotsLoading(true);
+  }
+
+  function selectService(id: string) {
+    setServiceId(id);
+    setSelectedSlot(null);
+    setSlotsLoading(true);
+  }
+
+  function selectGroomer(id: string) {
+    setGroomerId(id);
+    setSelectedSlot(null);
+    setSlotsLoading(true);
   }
 
   async function submitBooking(event: FormEvent<HTMLFormElement>) {
@@ -314,7 +327,7 @@ export default function BookingPage(props: BookingPageProps) {
                 <button
                   className={`service-card ${service.id === serviceId ? "selected" : ""}`}
                   key={service.id}
-                  onClick={() => setServiceId(service.id)}
+                  onClick={() => selectService(service.id)}
                 >
                   <span className="radio">
                     {service.id === serviceId && <span />}
@@ -347,7 +360,7 @@ export default function BookingPage(props: BookingPageProps) {
                 <button
                   className={`groomer-card ${groomer.id === groomerId ? "selected" : ""}`}
                   key={groomer.id}
-                  onClick={() => setGroomerId(groomer.id)}
+                  onClick={() => selectGroomer(groomer.id)}
                 >
                   <span className={`avatar ${groomer.color}`}>
                     {groomer.initials}

@@ -2,10 +2,12 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowRight, PawPrint } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -31,7 +33,8 @@ export default function LoginPage() {
         });
         if (error) throw error;
         if (data.session) {
-          window.location.href = "/dashboard";
+          router.push("/dashboard");
+          router.refresh();
           return;
         }
         setMessage("Check your email to confirm your account, then sign in.");
@@ -41,7 +44,8 @@ export default function LoginPage() {
           password,
         });
         if (error) throw error;
-        window.location.href = "/dashboard";
+        router.push("/dashboard");
+        router.refresh();
       }
     } catch (error) {
       setMessage(
