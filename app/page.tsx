@@ -47,6 +47,21 @@ function getCalendarDays(month: Date) {
   });
 }
 
+function getTimeZoneName(timeZone: string) {
+  try {
+    return (
+      new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        timeZoneName: "long",
+      })
+        .formatToParts(new Date())
+        .find((part) => part.type === "timeZoneName")?.value ?? timeZone
+    );
+  } catch {
+    return timeZone;
+  }
+}
+
 type BookingPageProps = {
   shopSlug?: string;
 };
@@ -389,7 +404,10 @@ export default function BookingPage(props: BookingPageProps) {
               <span>3</span>
               <div>
                 <h2>Find a time</h2>
-                <p>All times are shown in Pacific Time.</p>
+                <p>
+                  All times are shown in{" "}
+                  {getTimeZoneName(shopfront.shop.timezone)}.
+                </p>
               </div>
             </div>
             <div className="scheduler">
@@ -490,7 +508,7 @@ export default function BookingPage(props: BookingPageProps) {
                 </div>
                 <div className="timezone">
                   <ShieldCheck size={16} />
-                  Your time is held for 10 minutes at checkout.
+                  Availability is confirmed when you submit your booking.
                 </div>
               </div>
             </div>
