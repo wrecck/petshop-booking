@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import {
   ArrowRight,
   CalendarCheck,
@@ -42,6 +42,22 @@ export default function HomePage() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [existingAccount, setExistingAccount] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    try {
+      const supabase = createClient();
+      supabase.auth.getUser().then(({ data }) => {
+        if (active && data.user) setExistingAccount(true);
+      });
+    } catch {
+      // The unconfigured state is explained when the form is submitted.
+    }
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function updateShopName(value: string) {
     setShopName(value);
@@ -244,32 +260,40 @@ export default function HomePage() {
                 This becomes your permanent customer booking address.
               </small>
             </label>
-            <label>
-              Business email
-              <input
-                required
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="hello@happypaws.com"
-                autoComplete="email"
-              />
-            </label>
-            <label>
-              Password
-              <input
-                required
-                minLength={8}
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="At least 8 characters"
-                autoComplete="new-password"
-              />
-            </label>
+            {!existingAccount && (
+              <>
+                <label>
+                  Business email
+                  <input
+                    required
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder="hello@happypaws.com"
+                    autoComplete="email"
+                  />
+                </label>
+                <label>
+                  Password
+                  <input
+                    required
+                    minLength={8}
+                    type="password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    placeholder="At least 8 characters"
+                    autoComplete="new-password"
+                  />
+                </label>
+              </>
+            )}
             {message && <p className="signup-message">{message}</p>}
             <button className="primary-button signup-wide" disabled={loading}>
-              {loading ? "Creating your shop…" : "Create my pet shop"}
+              {loading
+                ? "Creating your shop…"
+                : existingAccount
+                  ? "Complete my pet shop"
+                  : "Create my pet shop"}
               {!loading && <ArrowRight size={17} />}
             </button>
           </form>
