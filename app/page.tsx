@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   ArrowLeft,
   CalendarDays,
@@ -303,9 +304,9 @@ export default function BookingPage(props: BookingPageProps) {
                 .join(", ") || "Book your visit"}
             </span>
           </div>
-          <a className="owner-link" href="/login">
+          <Link className="owner-link" href="/login">
             Owner login
-          </a>
+          </Link>
         </div>
       </header>
 
