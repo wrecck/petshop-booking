@@ -17,7 +17,7 @@ create table public.shops (
     check (slug not in ('api', 'auth', 'book', 'dashboard', 'home', 'login')),
   timezone text not null default 'America/Los_Angeles',
   currency text not null default 'USD' check (
-    currency in ('USD', 'CAD', 'GBP', 'EUR', 'AUD', 'NZD')
+    currency in ('USD', 'CAD', 'GBP', 'EUR', 'AUD', 'NZD', 'PHP')
   ),
   address text,
   city text,

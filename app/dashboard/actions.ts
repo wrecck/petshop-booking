@@ -28,7 +28,7 @@ export async function addService(formData: FormData) {
     name: z.string().trim().min(2).max(100),
     description: z.string().trim().max(240),
     duration: z.coerce.number().int().min(15).max(480),
-    price: z.coerce.number().min(0).max(10000),
+    price: z.coerce.number().min(0).max(100000),
   });
   const parsed = schema.safeParse({
     shopId: formData.get("shopId"),
@@ -68,6 +68,8 @@ export async function addService(formData: FormData) {
   }
 
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/services");
+  revalidatePath("/dashboard/groomers");
 }
 
 export async function toggleService(formData: FormData) {
@@ -81,6 +83,44 @@ export async function toggleService(formData: FormData) {
     .update({ active: active.data === "true" })
     .eq("id", serviceId.data);
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/services");
+}
+
+export async function updateService(formData: FormData) {
+  const parsed = z
+    .object({
+      serviceId: z.uuid(),
+      name: z.string().trim().min(2).max(100),
+      description: z.string().trim().max(240),
+      duration: z.coerce.number().int().min(15).max(480),
+      price: z.coerce.number().min(0).max(100000),
+      active: z.enum(["true", "false"]),
+    })
+    .safeParse({
+      serviceId: formData.get("serviceId"),
+      name: formData.get("name"),
+      description: formData.get("description"),
+      duration: formData.get("duration"),
+      price: formData.get("price"),
+      active: formData.get("active"),
+    });
+  if (!parsed.success) return;
+
+  const { supabase, shopId } = await getOwnerShopId();
+  await supabase
+    .from("services")
+    .update({
+      name: parsed.data.name,
+      description: parsed.data.description,
+      duration_minutes: parsed.data.duration,
+      price_cents: Math.round(parsed.data.price * 100),
+      active: parsed.data.active === "true",
+    })
+    .eq("id", parsed.data.serviceId)
+    .eq("shop_id", shopId);
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/services");
 }
 
 export async function saveBusinessHours(formData: FormData) {
@@ -121,7 +161,7 @@ export async function updateShopSettings(formData: FormData) {
       .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
       .max(60)
       .refine((slug) => !reservedSlugs.has(slug)),
-    currency: z.enum(["USD", "CAD", "GBP", "EUR", "AUD", "NZD"]),
+    currency: z.enum(["USD", "CAD", "GBP", "EUR", "AUD", "NZD", "PHP"]),
     timezone: z.string().min(3).max(80),
     phone: z.string().trim().max(30),
     address: z.string().trim().max(200),

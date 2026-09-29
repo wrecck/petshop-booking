@@ -1,10 +1,9 @@
-import { redirect } from "next/navigation";
 import { CircleCheck, Store, UserRound } from "lucide-react";
 import {
   updateOwnerAccount,
   updateShopSettings,
 } from "@/app/dashboard/actions";
-import { createClient } from "@/lib/supabase/server";
+import { getDashboardContext } from "@/lib/dashboard-context";
 
 const errors: Record<string, string> = {
   "invalid-shop": "Check the shop name, URL, and other business details.",
@@ -19,20 +18,7 @@ export default async function SettingsPage({
 }: {
   searchParams: Promise<{ error?: string; saved?: string }>;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data: shop } = await supabase
-    .from("shops")
-    .select(
-      "name,slug,currency,timezone,phone,address,city,state",
-    )
-    .eq("owner_id", user.id)
-    .single();
-  if (!shop) redirect("/auth/provision");
+  const { user, shop } = await getDashboardContext();
 
   const params = await searchParams;
   const fullName =
@@ -100,6 +86,7 @@ export default async function SettingsPage({
                 <option value="EUR">EUR — Euro</option>
                 <option value="AUD">AUD — Australian Dollar</option>
                 <option value="NZD">NZD — New Zealand Dollar</option>
+                <option value="PHP">PHP — Philippine Peso</option>
               </select>
             </label>
             <label>
@@ -111,6 +98,7 @@ export default async function SettingsPage({
                 <option value="America/New_York">Eastern Time</option>
                 <option value="Europe/London">London</option>
                 <option value="Europe/Paris">Central European Time</option>
+                <option value="Asia/Manila">Philippine Time</option>
                 <option value="Australia/Sydney">Sydney</option>
               </select>
             </label>

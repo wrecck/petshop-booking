@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import {
   CalendarDays,
   CheckCircle2,
@@ -10,9 +9,8 @@ import {
   Users,
 } from "lucide-react";
 import { hasSupabaseConfig } from "@/lib/supabase/config";
-import { createClient } from "@/lib/supabase/server";
+import { getDashboardContext } from "@/lib/dashboard-context";
 import {
-  addService,
   saveBusinessHours,
   toggleService,
   updateAppointmentStatus,
@@ -80,20 +78,7 @@ export default async function DashboardPage() {
     );
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  const { data: shop } = await supabase
-    .from("shops")
-    .select("id,name,slug,timezone,currency")
-    .eq("owner_id", user.id)
-    .maybeSingle();
-
-  if (!shop) redirect("/auth/provision");
+  const { supabase, shop } = await getDashboardContext();
 
   const today = new Date().toISOString();
   const [
@@ -275,6 +260,9 @@ export default async function DashboardPage() {
                 <p className="eyebrow">Offerings</p>
                 <h2>Services</h2>
               </div>
+              <Link className="panel-link" href="/dashboard/services">
+                Edit services
+              </Link>
             </div>
             <div className="service-admin-list">
               {serviceRows.map((service) => (
@@ -298,38 +286,6 @@ export default async function DashboardPage() {
                 </article>
               ))}
             </div>
-            <form className="add-service-form" action={addService}>
-              <input type="hidden" name="shopId" value={shop.id} />
-              <input required name="name" placeholder="Service name" />
-              <input
-                required
-                name="description"
-                placeholder="Short description"
-              />
-              <label>
-                Minutes
-                <input
-                  required
-                  name="duration"
-                  type="number"
-                  min="15"
-                  step="15"
-                  defaultValue="60"
-                />
-              </label>
-              <label>
-                Price ({shop.currency})
-                <input
-                  required
-                  name="price"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  defaultValue="50"
-                />
-              </label>
-              <button className="primary-button">Add service</button>
-            </form>
           </section>
 
           <section className="settings-panel">

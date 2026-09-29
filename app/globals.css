@@ -1442,6 +1442,13 @@ footer span {
   font-size: 10px;
 }
 
+.panel-link {
+  color: var(--sage-dark);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 800;
+}
+
 .empty-schedule {
   display: grid;
   justify-items: center;
@@ -1656,6 +1663,144 @@ footer span {
 .hours-form .primary-button {
   height: 42px;
   margin-top: 12px;
+}
+
+.dashboard-header-skeleton {
+  height: 76px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.loading-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.loading-block,
+.loading-card,
+.loading-panel {
+  border-radius: 14px;
+  background: linear-gradient(90deg, #eceae3 25%, #f7f5ef 50%, #eceae3 75%);
+  background-size: 200% 100%;
+  animation: loading-shimmer 1.2s ease-in-out infinite;
+}
+
+.loading-block.title {
+  width: min(280px, 70%);
+  height: 42px;
+}
+
+.loading-block.copy {
+  width: min(420px, 90%);
+  height: 16px;
+}
+
+.loading-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.loading-card {
+  height: 92px;
+}
+
+.loading-panel {
+  min-height: 240px;
+}
+
+@keyframes loading-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.service-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.service-editor-card {
+  display: grid;
+  gap: 14px;
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  background: var(--paper);
+}
+
+.service-editor-card.add {
+  border-style: dashed;
+}
+
+.service-editor-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.service-editor-heading > span {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: var(--sage-dark);
+  border-radius: 12px;
+  background: var(--sage);
+}
+
+.service-editor-heading > div {
+  display: grid;
+  gap: 4px;
+}
+
+.service-editor-heading small {
+  color: var(--ink-soft);
+  font-size: 10px;
+}
+
+.service-editor-card label {
+  display: grid;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.service-editor-card input,
+.service-editor-card select,
+.service-editor-card textarea {
+  width: 100%;
+  padding: 11px;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  outline: none;
+  background: white;
+  font: inherit;
+}
+
+.service-editor-card input,
+.service-editor-card select {
+  height: 42px;
+  padding: 0 11px;
+}
+
+.service-editor-card textarea {
+  resize: vertical;
+  min-height: 84px;
+}
+
+.service-editor-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
 .dashboard-welcome.compact {
@@ -1947,7 +2092,9 @@ footer span {
   }
 
   .groomer-admin-grid,
-  .tenant-settings-grid {
+  .tenant-settings-grid,
+  .service-editor-grid,
+  .loading-grid {
     grid-template-columns: 1fr;
   }
 
@@ -2174,7 +2321,8 @@ footer span {
     padding: 20px 15px;
   }
 
-  .tenant-settings-card form {
+  .tenant-settings-card form,
+  .service-editor-row {
     grid-template-columns: 1fr;
   }
 

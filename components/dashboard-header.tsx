@@ -3,6 +3,7 @@ import {
   ExternalLink,
   LayoutDashboard,
   PawPrint,
+  Scissors,
   Settings,
   UsersRound,
 } from "lucide-react";
@@ -29,6 +30,9 @@ export function DashboardHeader({
         </Link>
         <Link href="/dashboard/groomers">
           <UsersRound size={15} /> Groomers
+        </Link>
+        <Link href="/dashboard/services">
+          <Scissors size={15} /> Services
         </Link>
         <Link href="/dashboard/settings">
           <Settings size={15} /> Settings
