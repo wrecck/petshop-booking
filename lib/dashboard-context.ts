@@ -1,8 +1,10 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { hasSupabaseConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 export const getDashboardContext = cache(async () => {
+  if (!hasSupabaseConfig()) redirect("/");
   const supabase = await createClient();
   const {
     data: { user },
