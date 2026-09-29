@@ -26,7 +26,7 @@ type AppointmentRow = {
   status: string;
   services: { name: string } | null;
   staff: { name: string } | null;
-  customers: { name: string; email: string } | null;
+  customers: { name: string; email: string; phone: string | null } | null;
   pets: { name: string; breed: string | null } | null;
 };
 
@@ -124,7 +124,7 @@ export default async function DashboardPage({
             <label>
               Booking URL
               <span className="slug-input">
-                <span>/book/</span>
+                <span>/</span>
                 <input
                   required
                   name="slug"
@@ -162,7 +162,7 @@ export default async function DashboardPage({
       supabase
         .from("appointments")
         .select(
-          "id,starts_at,status,services(name),staff(name),customers(name,email),pets(name,breed)",
+          "id,starts_at,status,services(name),staff(name),customers(name,email,phone),pets(name,breed)",
         )
         .eq("shop_id", shop.id)
         .gte("starts_at", today)
@@ -187,8 +187,8 @@ export default async function DashboardPage({
   const rows = (appointments ?? []) as unknown as AppointmentRow[];
   const serviceRows = (services ?? []) as ServiceRow[];
   const hoursRows = (hours ?? []) as HoursRow[];
-  const confirmedCount = rows.filter(
-    (appointment) => appointment.status === "confirmed",
+  const upcomingCount = rows.filter((appointment) =>
+    ["pending", "confirmed"].includes(appointment.status),
   ).length;
 
   return (
@@ -201,7 +201,7 @@ export default async function DashboardPage({
           <span>Paws & Co.</span>
         </Link>
         <nav>
-          <Link href={`/book/${shop.slug}`} target="_blank">
+          <Link href={`/${shop.slug}`} target="_blank">
             View booking page <ExternalLink size={14} />
           </Link>
           <form action={signOut}>
@@ -217,7 +217,7 @@ export default async function DashboardPage({
             <h1>{shop.name}</h1>
             <p>Here’s what’s happening at your shop.</p>
           </div>
-          <Link className="primary-button" href={`/book/${shop.slug}`}>
+          <Link className="primary-button" href={`/${shop.slug}`}>
             Open booking page <ExternalLink size={16} />
           </Link>
         </section>
@@ -227,7 +227,7 @@ export default async function DashboardPage({
             <span><CalendarDays /></span>
             <div>
               <small>Upcoming</small>
-              <strong>{confirmedCount}</strong>
+              <strong>{upcomingCount}</strong>
             </div>
           </article>
           <article>
@@ -252,7 +252,7 @@ export default async function DashboardPage({
           <div className="panel-heading">
             <div>
               <p className="eyebrow">Schedule</p>
-              <h2>Upcoming appointments</h2>
+              <h2>Appointment requests</h2>
             </div>
             <span>{shop.timezone.replace("_", " ")}</span>
           </div>
@@ -262,7 +262,7 @@ export default async function DashboardPage({
               <CalendarDays size={30} />
               <h3>Your schedule is clear.</h3>
               <p>Share your booking page to receive your first appointment.</p>
-              <code>{`/book/${shop.slug}`}</code>
+              <code>{`/${shop.slug}/`}</code>
             </div>
           ) : (
             <div className="appointment-list">
@@ -296,11 +296,12 @@ export default async function DashboardPage({
                     <div className="customer-cell">
                       <strong>{appointment.customers?.name}</strong>
                       <span>{appointment.customers?.email}</span>
+                      <span>{appointment.customers?.phone}</span>
                     </div>
                     <span className={`status-pill ${appointment.status}`}>
                       {appointment.status.replace("_", " ")}
                     </span>
-                    {appointment.status === "confirmed" && (
+                    {["pending", "confirmed"].includes(appointment.status) && (
                       <form action={updateAppointmentStatus}>
                         <input
                           type="hidden"
@@ -309,10 +310,21 @@ export default async function DashboardPage({
                         />
                         <button
                           name="status"
-                          value="completed"
-                          title="Mark completed"
+                          value={
+                            appointment.status === "pending"
+                              ? "confirmed"
+                              : "completed"
+                          }
+                          title={
+                            appointment.status === "pending"
+                              ? "Confirm appointment"
+                              : "Mark completed"
+                          }
                         >
                           <CheckCircle2 size={18} />
+                          {appointment.status === "pending"
+                            ? "Confirm"
+                            : "Complete"}
                         </button>
                         <button
                           name="status"
