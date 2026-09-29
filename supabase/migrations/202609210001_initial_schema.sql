@@ -1,6 +1,7 @@
 create extension if not exists btree_gist;
 
 create type public.appointment_status as enum (
+  'pending',
   'confirmed',
   'completed',
   'cancelled',
@@ -96,7 +97,7 @@ create table public.appointments (
   pet_id uuid not null references public.pets(id),
   starts_at timestamptz not null,
   ends_at timestamptz not null,
-  status public.appointment_status not null default 'confirmed',
+  status public.appointment_status not null default 'pending',
   notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -104,7 +105,7 @@ create table public.appointments (
   constraint appointments_no_staff_overlap exclude using gist (
     staff_id with =,
     tstzrange(starts_at, ends_at, '[)') with &&
-  ) where (status = 'confirmed')
+  ) where (status in ('pending', 'confirmed'))
 );
 
 create index appointments_shop_starts_at_idx
@@ -356,7 +357,7 @@ as $$
     select 1
     from public.appointments
     where appointments.staff_id = qualified_staff.id
-      and appointments.status = 'confirmed'
+      and appointments.status in ('pending', 'confirmed')
       and tstzrange(appointments.starts_at, appointments.ends_at, '[)')
         && tstzrange(
           slots.starts_at,

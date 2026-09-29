@@ -48,7 +48,7 @@ export async function createShop(formData: FormData) {
 export async function updateAppointmentStatus(formData: FormData) {
   const appointmentId = z.uuid().safeParse(formData.get("appointmentId"));
   const status = z
-    .enum(["confirmed", "completed", "cancelled", "no_show"])
+    .enum(["pending", "confirmed", "completed", "cancelled", "no_show"])
     .safeParse(formData.get("status"));
 
   if (!appointmentId.success || !status.success) return;

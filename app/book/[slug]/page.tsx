@@ -1,10 +1,10 @@
-import BookingPage from "@/app/page";
+import { redirect } from "next/navigation";
 
-export default async function ShopBookingPage({
+export default async function LegacyShopBookingPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  return <BookingPage shopSlug={slug} />;
+  redirect(`/${slug}`);
 }

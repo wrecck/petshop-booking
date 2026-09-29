@@ -101,6 +101,7 @@ export default function BookingPage(props: BookingPageProps) {
   const [customerName, setCustomerName] = useState("");
   const [petName, setPetName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
 
   const services = shopfront.services;
   const groomers: UiGroomer[] = [
@@ -216,6 +217,7 @@ export default function BookingPage(props: BookingPageProps) {
           startsAt: selectedSlot.starts_at,
           customerName,
           customerEmail: email,
+          customerPhone: phone,
           petName,
           petType: "Dog",
           demo: demoMode,
@@ -241,11 +243,12 @@ export default function BookingPage(props: BookingPageProps) {
           <div className="success-mark">
             <Check size={34} strokeWidth={2.5} />
           </div>
-          <p className="eyebrow">You’re all set</p>
-          <h1>A fresh look is on the way.</h1>
+          <p className="eyebrow">Request received</p>
+          <h1>We got your appointment request.</h1>
           <p className="confirmation-copy">
-            We sent the appointment details to <strong>{email}</strong>.
-            We can’t wait to meet {petName}!
+            Thanks for requesting a visit for <strong>{petName}</strong>.{" "}
+            {shopfront.shop.name} will get back to you shortly to confirm your
+            appointment.
           </p>
           <div className="confirmation-details">
             <div>
@@ -274,7 +277,7 @@ export default function BookingPage(props: BookingPageProps) {
               setShowDetails(false);
             }}
           >
-            Book another visit
+            Request another visit
           </button>
         </div>
       </main>
@@ -508,7 +511,7 @@ export default function BookingPage(props: BookingPageProps) {
                 </div>
                 <div className="timezone">
                   <ShieldCheck size={16} />
-                  Availability is confirmed when you submit your booking.
+                  This time is requested now and confirmed by the shop shortly.
                 </div>
               </div>
             </div>
@@ -550,6 +553,18 @@ export default function BookingPage(props: BookingPageProps) {
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     placeholder="jamie@example.com"
+                  />
+                </label>
+                <label className="wide">
+                  Phone number
+                  <input
+                    required
+                    type="tel"
+                    minLength={7}
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    placeholder="(503) 555-0142"
+                    autoComplete="tel"
                   />
                 </label>
               </form>
@@ -606,7 +621,7 @@ export default function BookingPage(props: BookingPageProps) {
                 type="submit"
                 disabled={!selectedSlot || submitting}
               >
-                {submitting ? "Confirming…" : "Confirm booking"}
+                {submitting ? "Sending request…" : "Request appointment"}
                 {!submitting && <ChevronRight size={17} />}
               </button>
               <button

@@ -13,8 +13,9 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Paws & Co. | Book a visit",
-  description: "Book your pet's next grooming appointment in a few simple steps.",
+  title: "Pawsbook | Online booking for pet businesses",
+  description:
+    "Launch a beautiful online booking page for your pet shop in minutes.",
 };
 
 export default function RootLayout({
