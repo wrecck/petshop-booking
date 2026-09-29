@@ -3,6 +3,7 @@ export type Shop = {
   name: string;
   slug: string;
   timezone: string;
+  currency: string;
   address: string | null;
   city: string | null;
   state: string | null;

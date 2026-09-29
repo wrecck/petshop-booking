@@ -1658,6 +1658,236 @@ footer span {
   margin-top: 12px;
 }
 
+.dashboard-welcome.compact {
+  align-items: flex-start;
+}
+
+.groomer-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.groomer-admin-card,
+.tenant-settings-card {
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  background: var(--paper);
+}
+
+.groomer-admin-card {
+  display: grid;
+  gap: 15px;
+}
+
+.groomer-admin-card.add {
+  align-content: start;
+  border-style: dashed;
+}
+
+.groomer-admin-heading,
+.settings-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 17px;
+  border-bottom: 1px solid var(--line);
+}
+
+.groomer-admin-heading > div,
+.settings-card-heading > div {
+  display: grid;
+  gap: 4px;
+}
+
+.groomer-admin-heading small,
+.settings-card-heading p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 10px;
+}
+
+.add-groomer-icon,
+.settings-card-heading > span {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: var(--sage-dark);
+  border-radius: 12px;
+  background: var(--sage);
+}
+
+.add-groomer-icon svg,
+.settings-card-heading svg {
+  width: 19px;
+}
+
+.groomer-admin-card > label,
+.tenant-settings-card label {
+  display: grid;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.groomer-admin-card input:not([type="checkbox"]),
+.groomer-admin-card select,
+.tenant-settings-card input,
+.tenant-settings-card select {
+  width: 100%;
+  height: 42px;
+  padding: 0 11px;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  outline: none;
+  background: white;
+}
+
+.groomer-admin-card input:focus,
+.groomer-admin-card select:focus,
+.tenant-settings-card input:focus,
+.tenant-settings-card select:focus {
+  border-color: var(--sage-dark);
+  box-shadow: 0 0 0 3px rgba(47, 98, 86, 0.1);
+}
+
+.groomer-admin-card fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px 15px;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+
+.groomer-admin-card legend {
+  padding: 0 5px;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.groomer-admin-card fieldset label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink-soft);
+  font-size: 10px;
+}
+
+.groomer-placeholder {
+  min-height: 126px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 18px;
+  color: var(--ink-soft);
+  border-radius: 10px;
+  background: #f4f6f2;
+  text-align: center;
+}
+
+.groomer-placeholder p {
+  max-width: 300px;
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.tenant-settings-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.55fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.settings-card-heading h2 {
+  margin: 0;
+  font-family: var(--font-display), serif;
+  font-size: 22px;
+}
+
+.tenant-settings-card form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-top: 22px;
+}
+
+.tenant-settings-card.owner form {
+  grid-template-columns: 1fr;
+}
+
+.tenant-settings-card .wide {
+  grid-column: 1 / -1;
+}
+
+.tenant-settings-card label small {
+  color: var(--ink-soft);
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.settings-slug-input {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 11px;
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f4f6f2;
+  font-size: 10px;
+  font-weight: 500;
+  overflow: hidden;
+}
+
+.settings-slug-input > span {
+  flex: 0 0 auto;
+}
+
+.settings-slug-input input {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.owner-note {
+  margin: 0;
+  padding: 11px;
+  color: var(--ink-soft);
+  border-radius: 8px;
+  background: #f4f6f2;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.settings-alert {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: -12px 0 20px;
+  padding: 12px 14px;
+  border-radius: 9px;
+  font-size: 11px;
+}
+
+.settings-alert.success {
+  color: var(--sage-dark);
+  background: var(--sage);
+}
+
+.settings-alert.error {
+  color: #8b352f;
+  background: #fff1ed;
+}
+
 @media (max-width: 900px) {
   .marketing-hero {
     grid-template-columns: 1fr;
@@ -1714,6 +1944,31 @@ footer span {
 
   .settings-grid {
     grid-template-columns: 1fr;
+  }
+
+  .groomer-admin-grid,
+  .tenant-settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-header {
+    height: auto;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 13px;
+    padding-block: 15px;
+  }
+
+  .dashboard-header nav {
+    width: 100%;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 3px;
+  }
+
+  .dashboard-header nav a,
+  .dashboard-header nav button {
+    flex: 0 0 auto;
   }
 }
 
@@ -1869,8 +2124,17 @@ footer span {
     padding: 0 17px;
   }
 
-  .dashboard-header nav a {
-    display: none;
+  .dashboard-header {
+    padding-block: 13px;
+  }
+
+  .dashboard-header .brand {
+    font-size: 17px;
+  }
+
+  .dashboard-header nav a,
+  .dashboard-header nav button {
+    font-size: 10px;
   }
 
   .dashboard-shell {
@@ -1903,6 +2167,31 @@ footer span {
 
   .settings-panel {
     padding: 20px 14px;
+  }
+
+  .groomer-admin-card,
+  .tenant-settings-card {
+    padding: 20px 15px;
+  }
+
+  .tenant-settings-card form {
+    grid-template-columns: 1fr;
+  }
+
+  .tenant-settings-card .wide {
+    grid-column: auto;
+  }
+
+  .settings-slug-input {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 8px 10px 0;
+  }
+
+  .settings-slug-input input {
+    height: 34px;
+    padding: 0;
+    background: transparent;
   }
 
   .hours-form > div {

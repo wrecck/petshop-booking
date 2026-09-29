@@ -13,6 +13,8 @@ Supabase.
 - Shop-owner email/password authentication
 - Automatic shop onboarding with starter services and hours
 - Owner dashboard with appointments, customers, and status updates
+- Groomer management with per-service assignments
+- Tenant settings for shop identity, booking URL, owner, and currency
 - PostgreSQL row-level security for tenant isolation
 - Responsive desktop and mobile layouts
 
@@ -87,6 +89,10 @@ The dashboard will show the public URL:
 ```text
 /your-shop-slug/
 ```
+
+Use **Groomers** in the dashboard navigation to add or edit groomers and select
+the services each person can perform. Use **Settings** to manage the pet shop
+name, public slug, currency, timezone, contact details, and owner account.
 
 The onboarding function creates:
 

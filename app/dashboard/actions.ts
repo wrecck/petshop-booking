@@ -5,46 +5,6 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
-const onboardingSchema = z.object({
-  name: z.string().trim().min(2).max(100),
-  slug: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
-    .max(60),
-  timezone: z.string().min(3).max(80),
-});
-
-export async function createShop(formData: FormData) {
-  const parsed = onboardingSchema.safeParse({
-    name: formData.get("name"),
-    slug: formData.get("slug"),
-    timezone: formData.get("timezone"),
-  });
-
-  if (!parsed.success) {
-    redirect("/dashboard?error=invalid-shop");
-  }
-
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("create_shop_with_defaults", {
-    p_name: parsed.data.name,
-    p_slug: parsed.data.slug,
-    p_timezone: parsed.data.timezone,
-  });
-
-  if (error) {
-    const reason = error.message.toLowerCase().includes("duplicate")
-      ? "slug-taken"
-      : "setup-failed";
-    redirect(`/dashboard?error=${reason}`);
-  }
-
-  revalidatePath("/dashboard");
-  redirect("/dashboard");
-}
-
 export async function updateAppointmentStatus(formData: FormData) {
   const appointmentId = z.uuid().safeParse(formData.get("appointmentId"));
   const status = z
@@ -140,6 +100,229 @@ export async function saveBusinessHours(formData: FormData) {
     .from("business_hours")
     .upsert(rows, { onConflict: "shop_id,day_of_week" });
   revalidatePath("/dashboard");
+}
+
+const reservedSlugs = new Set([
+  "api",
+  "auth",
+  "book",
+  "dashboard",
+  "home",
+  "login",
+]);
+
+export async function updateShopSettings(formData: FormData) {
+  const schema = z.object({
+    name: z.string().trim().min(2).max(100),
+    slug: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+      .max(60)
+      .refine((slug) => !reservedSlugs.has(slug)),
+    currency: z.enum(["USD", "CAD", "GBP", "EUR", "AUD", "NZD"]),
+    timezone: z.string().min(3).max(80),
+    phone: z.string().trim().max(30),
+    address: z.string().trim().max(200),
+    city: z.string().trim().max(100),
+    state: z.string().trim().max(100),
+  });
+  const parsed = schema.safeParse({
+    name: formData.get("name"),
+    slug: formData.get("slug"),
+    currency: formData.get("currency"),
+    timezone: formData.get("timezone"),
+    phone: formData.get("phone"),
+    address: formData.get("address"),
+    city: formData.get("city"),
+    state: formData.get("state"),
+  });
+
+  if (!parsed.success) redirect("/dashboard/settings?error=invalid-shop");
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { error } = await supabase
+    .from("shops")
+    .update({
+      name: parsed.data.name,
+      slug: parsed.data.slug,
+      currency: parsed.data.currency,
+      timezone: parsed.data.timezone,
+      phone: parsed.data.phone || null,
+      address: parsed.data.address || null,
+      city: parsed.data.city || null,
+      state: parsed.data.state || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("owner_id", user.id);
+
+  if (error) {
+    redirect(
+      `/dashboard/settings?error=${
+        error.message.toLowerCase().includes("duplicate")
+          ? "slug-taken"
+          : "save-failed"
+      }`,
+    );
+  }
+
+  revalidatePath("/dashboard", "layout");
+  redirect("/dashboard/settings?saved=shop");
+}
+
+export async function updateOwnerAccount(formData: FormData) {
+  const parsed = z
+    .object({
+      fullName: z.string().trim().min(2).max(100),
+      email: z.email().max(200),
+    })
+    .safeParse({
+      fullName: formData.get("fullName"),
+      email: formData.get("email"),
+    });
+  if (!parsed.success) redirect("/dashboard/settings?error=invalid-owner");
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({
+    email: parsed.data.email,
+    data: { full_name: parsed.data.fullName },
+  });
+
+  if (error) redirect("/dashboard/settings?error=owner-save-failed");
+  revalidatePath("/dashboard/settings");
+  redirect("/dashboard/settings?saved=owner");
+}
+
+async function getOwnerShopId() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: shop } = await supabase
+    .from("shops")
+    .select("id")
+    .eq("owner_id", user.id)
+    .single();
+  if (!shop) redirect("/auth/provision");
+  return { supabase, shopId: shop.id };
+}
+
+export async function addGroomer(formData: FormData) {
+  const parsed = z
+    .object({
+      name: z.string().trim().min(2).max(100),
+      role: z.string().trim().min(2).max(100),
+    })
+    .safeParse({
+      name: formData.get("name"),
+      role: formData.get("role"),
+    });
+  if (!parsed.success) return;
+
+  const { supabase, shopId } = await getOwnerShopId();
+  const { data: groomer } = await supabase
+    .from("staff")
+    .insert({
+      shop_id: shopId,
+      name: parsed.data.name,
+      role: parsed.data.role,
+      initials: parsed.data.name
+        .split(/\s+/)
+        .map((part) => part[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase(),
+      color: "peach",
+    })
+    .select("id")
+    .single();
+
+  if (groomer) {
+    const { data: services } = await supabase
+      .from("services")
+      .select("id")
+      .eq("shop_id", shopId)
+      .eq("active", true);
+    if (services?.length) {
+      await supabase.from("staff_services").insert(
+        services.map((service) => ({
+          staff_id: groomer.id,
+          service_id: service.id,
+        })),
+      );
+    }
+  }
+
+  revalidatePath("/dashboard/groomers");
+}
+
+export async function updateGroomer(formData: FormData) {
+  const parsed = z
+    .object({
+      staffId: z.uuid(),
+      name: z.string().trim().min(2).max(100),
+      role: z.string().trim().min(2).max(100),
+      active: z.enum(["true", "false"]),
+    })
+    .safeParse({
+      staffId: formData.get("staffId"),
+      name: formData.get("name"),
+      role: formData.get("role"),
+      active: formData.get("active"),
+    });
+  if (!parsed.success) return;
+
+  const { supabase, shopId } = await getOwnerShopId();
+  const { data: ownedServices } = await supabase
+    .from("services")
+    .select("id")
+    .eq("shop_id", shopId);
+  const ownedServiceIds = new Set(
+    (ownedServices ?? []).map((service) => service.id),
+  );
+  const selectedServices = formData
+    .getAll("services")
+    .map(String)
+    .filter((id) => ownedServiceIds.has(id));
+
+  await supabase
+    .from("staff")
+    .update({
+      name: parsed.data.name,
+      role: parsed.data.role,
+      active: parsed.data.active === "true",
+      initials: parsed.data.name
+        .split(/\s+/)
+        .map((part) => part[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase(),
+    })
+    .eq("id", parsed.data.staffId)
+    .eq("shop_id", shopId);
+
+  await supabase
+    .from("staff_services")
+    .delete()
+    .eq("staff_id", parsed.data.staffId);
+  if (selectedServices.length) {
+    await supabase.from("staff_services").insert(
+      selectedServices.map((serviceId) => ({
+        staff_id: parsed.data.staffId,
+        service_id: serviceId,
+      })),
+    );
+  }
+
+  revalidatePath("/dashboard/groomers");
 }
 
 export async function signOut() {

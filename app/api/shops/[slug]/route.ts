@@ -18,7 +18,7 @@ export async function GET(
   const supabase = await createClient();
   const { data: shop, error } = await supabase
     .from("shops")
-    .select("id,name,slug,timezone,address,city,state,phone")
+    .select("id,name,slug,timezone,currency,address,city,state,phone")
     .eq("slug", slug)
     .eq("active", true)
     .single();

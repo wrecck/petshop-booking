@@ -14,6 +14,15 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
+const reservedSlugs = new Set([
+  "api",
+  "auth",
+  "book",
+  "dashboard",
+  "home",
+  "login",
+]);
+
 function createSlug(value: string) {
   return value
     .toLowerCase()
@@ -41,6 +50,10 @@ export default function HomePage() {
 
   async function register(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (reservedSlugs.has(shopSlug)) {
+      setMessage("That pet shop URL is reserved. Please choose another.");
+      return;
+    }
     setLoading(true);
     setMessage("");
 
@@ -49,6 +62,47 @@ export default function HomePage() {
       const timezone =
         Intl.DateTimeFormat().resolvedOptions().timeZone ||
         "America/Los_Angeles";
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
+
+      if (currentUser) {
+        const { data: existingShop } = await supabase
+          .from("shops")
+          .select("id")
+          .eq("owner_id", currentUser.id)
+          .maybeSingle();
+
+        if (existingShop) {
+          router.push("/dashboard");
+          router.refresh();
+          return;
+        }
+
+        const { error: metadataError } = await supabase.auth.updateUser({
+          data: {
+            full_name: fullName,
+            shop_name: shopName,
+            shop_slug: shopSlug,
+            timezone,
+          },
+        });
+        if (metadataError) throw metadataError;
+
+        const { error: setupError } = await supabase.rpc(
+          "create_shop_with_defaults",
+          {
+            p_name: shopName,
+            p_slug: shopSlug,
+            p_timezone: timezone,
+          },
+        );
+        if (setupError) throw setupError;
+        router.push("/dashboard?welcome=1");
+        router.refresh();
+        return;
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
