@@ -1,7 +1,6 @@
-import { redirect } from "next/navigation";
 import { Plus, Scissors, UserRound } from "lucide-react";
 import { addGroomer, updateGroomer } from "@/app/dashboard/actions";
-import { createClient } from "@/lib/supabase/server";
+import { getDashboardContext } from "@/lib/dashboard-context";
 
 type Service = {
   id: string;
@@ -19,18 +18,7 @@ type Groomer = {
 };
 
 export default async function GroomersPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data: shop } = await supabase
-    .from("shops")
-    .select("id")
-    .eq("owner_id", user.id)
-    .single();
-  if (!shop) redirect("/auth/provision");
+  const { supabase, user, shop } = await getDashboardContext();
 
   const [{ data: staff }, { data: services }] = await Promise.all([
     supabase

@@ -11,7 +11,7 @@ begin
   ) then
     alter table public.shops
       add constraint shops_currency_check check (
-        currency in ('USD', 'CAD', 'GBP', 'EUR', 'AUD', 'NZD')
+        currency in ('USD', 'CAD', 'GBP', 'EUR', 'AUD', 'NZD', 'PHP')
       );
   end if;
 end
