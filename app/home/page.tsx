@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import {
   ArrowRight,
   CalendarCheck,
@@ -13,6 +13,15 @@ import {
   Store,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+
+const reservedSlugs = new Set([
+  "api",
+  "auth",
+  "book",
+  "dashboard",
+  "home",
+  "login",
+]);
 
 function createSlug(value: string) {
   return value
@@ -33,6 +42,22 @@ export default function HomePage() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [existingAccount, setExistingAccount] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    try {
+      const supabase = createClient();
+      supabase.auth.getUser().then(({ data }) => {
+        if (active && data.user) setExistingAccount(true);
+      });
+    } catch {
+      // The unconfigured state is explained when the form is submitted.
+    }
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function updateShopName(value: string) {
     setShopName(value);
@@ -41,6 +66,10 @@ export default function HomePage() {
 
   async function register(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (reservedSlugs.has(shopSlug)) {
+      setMessage("That pet shop URL is reserved. Please choose another.");
+      return;
+    }
     setLoading(true);
     setMessage("");
 
@@ -49,6 +78,47 @@ export default function HomePage() {
       const timezone =
         Intl.DateTimeFormat().resolvedOptions().timeZone ||
         "America/Los_Angeles";
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
+
+      if (currentUser) {
+        const { data: existingShop } = await supabase
+          .from("shops")
+          .select("id")
+          .eq("owner_id", currentUser.id)
+          .maybeSingle();
+
+        if (existingShop) {
+          router.push("/dashboard");
+          router.refresh();
+          return;
+        }
+
+        const { error: metadataError } = await supabase.auth.updateUser({
+          data: {
+            full_name: fullName,
+            shop_name: shopName,
+            shop_slug: shopSlug,
+            timezone,
+          },
+        });
+        if (metadataError) throw metadataError;
+
+        const { error: setupError } = await supabase.rpc(
+          "create_shop_with_defaults",
+          {
+            p_name: shopName,
+            p_slug: shopSlug,
+            p_timezone: timezone,
+          },
+        );
+        if (setupError) throw setupError;
+        router.push("/dashboard?welcome=1");
+        router.refresh();
+        return;
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -190,32 +260,40 @@ export default function HomePage() {
                 This becomes your permanent customer booking address.
               </small>
             </label>
-            <label>
-              Business email
-              <input
-                required
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="hello@happypaws.com"
-                autoComplete="email"
-              />
-            </label>
-            <label>
-              Password
-              <input
-                required
-                minLength={8}
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="At least 8 characters"
-                autoComplete="new-password"
-              />
-            </label>
+            {!existingAccount && (
+              <>
+                <label>
+                  Business email
+                  <input
+                    required
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder="hello@happypaws.com"
+                    autoComplete="email"
+                  />
+                </label>
+                <label>
+                  Password
+                  <input
+                    required
+                    minLength={8}
+                    type="password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    placeholder="At least 8 characters"
+                    autoComplete="new-password"
+                  />
+                </label>
+              </>
+            )}
             {message && <p className="signup-message">{message}</p>}
             <button className="primary-button signup-wide" disabled={loading}>
-              {loading ? "Creating your shop…" : "Create my pet shop"}
+              {loading
+                ? "Creating your shop…"
+                : existingAccount
+                  ? "Complete my pet shop"
+                  : "Create my pet shop"}
               {!loading && <ArrowRight size={17} />}
             </button>
           </form>

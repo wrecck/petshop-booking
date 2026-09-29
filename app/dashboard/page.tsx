@@ -13,9 +13,7 @@ import { hasSupabaseConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import {
   addService,
-  createShop,
   saveBusinessHours,
-  signOut,
   toggleService,
   updateAppointmentStatus,
 } from "@/app/dashboard/actions";
@@ -56,17 +54,16 @@ const dayNames = [
   "Saturday",
 ];
 
-const errorMessages: Record<string, string> = {
-  "invalid-shop": "Check the shop name, URL, and timezone.",
-  "slug-taken": "That booking URL is already in use. Try another.",
-  "setup-failed": "We could not create the shop. Please try again.",
-};
+function formatMoney(cents: number, currency: string) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(cents / 100);
+}
 
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
-}) {
+export default async function DashboardPage() {
   if (!hasSupabaseConfig()) {
     return (
       <main className="dashboard-empty">
@@ -92,64 +89,11 @@ export default async function DashboardPage({
 
   const { data: shop } = await supabase
     .from("shops")
-    .select("id,name,slug,timezone")
+    .select("id,name,slug,timezone,currency")
     .eq("owner_id", user.id)
     .maybeSingle();
 
-  const params = await searchParams;
-
-  if (!shop) {
-    return (
-      <main className="onboarding-page">
-        <div className="onboarding-card">
-          <span className="brand-mark">
-            <PawPrint size={20} fill="currentColor" />
-          </span>
-          <p className="eyebrow">One last step</p>
-          <h1>Create your shop</h1>
-          <p>
-            We’ll add starter services, weekly hours, and your public booking
-            page. You can customize them in Supabase.
-          </p>
-          {params.error && (
-            <p className="form-error">
-              {errorMessages[params.error] ?? errorMessages["setup-failed"]}
-            </p>
-          )}
-          <form action={createShop}>
-            <label>
-              Shop name
-              <input required name="name" placeholder="Happy Paws Grooming" />
-            </label>
-            <label>
-              Booking URL
-              <span className="slug-input">
-                <span>/</span>
-                <input
-                  required
-                  name="slug"
-                  pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
-                  placeholder="happy-paws"
-                />
-              </span>
-            </label>
-            <label>
-              Timezone
-              <select name="timezone" defaultValue="America/Los_Angeles">
-                <option value="America/Los_Angeles">Pacific Time</option>
-                <option value="America/Denver">Mountain Time</option>
-                <option value="America/Chicago">Central Time</option>
-                <option value="America/New_York">Eastern Time</option>
-                <option value="Europe/London">London</option>
-                <option value="Australia/Sydney">Sydney</option>
-              </select>
-            </label>
-            <button className="primary-button">Create my booking page</button>
-          </form>
-        </div>
-      </main>
-    );
-  }
+  if (!shop) redirect("/auth/provision");
 
   const today = new Date().toISOString();
   const [
@@ -192,25 +136,7 @@ export default async function DashboardPage({
   ).length;
 
   return (
-    <main className="dashboard-page">
-      <header className="dashboard-header">
-        <Link className="brand" href="/">
-          <span className="brand-mark">
-            <PawPrint size={20} fill="currentColor" />
-          </span>
-          <span>Paws & Co.</span>
-        </Link>
-        <nav>
-          <Link href={`/${shop.slug}`} target="_blank">
-            View booking page <ExternalLink size={14} />
-          </Link>
-          <form action={signOut}>
-            <button>Sign out</button>
-          </form>
-        </nav>
-      </header>
-
-      <div className="dashboard-shell">
+    <div className="dashboard-shell">
         <section className="dashboard-welcome">
           <div>
             <p className="eyebrow">Owner dashboard</p>
@@ -356,8 +282,8 @@ export default async function DashboardPage({
                   <div>
                     <strong>{service.name}</strong>
                     <span>
-                      {service.duration_minutes} min · $
-                      {(service.price_cents / 100).toFixed(0)}
+                      {service.duration_minutes} min ·{" "}
+                      {formatMoney(service.price_cents, shop.currency)}
                     </span>
                   </div>
                   <form action={toggleService}>
@@ -392,7 +318,7 @@ export default async function DashboardPage({
                 />
               </label>
               <label>
-                Price ($)
+                Price ({shop.currency})
                 <input
                   required
                   name="price"
@@ -450,7 +376,6 @@ export default async function DashboardPage({
             </form>
           </section>
         </div>
-      </div>
-    </main>
+    </div>
   );
 }

@@ -63,6 +63,19 @@ function getTimeZoneName(timeZone: string) {
   }
 }
 
+function formatMoney(cents: number, currency: string) {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
+      maximumFractionDigits: 2,
+    }).format(cents / 100);
+  } catch {
+    return `${currency} ${(cents / 100).toFixed(2)}`;
+  }
+}
+
 type BookingPageProps = {
   shopSlug?: string;
 };
@@ -359,7 +372,10 @@ export default function BookingPage(props: BookingPageProps) {
                     </span>
                   </span>
                   <span className="price">
-                    ${(service.price_cents / 100).toFixed(0)}
+                    {formatMoney(
+                      service.price_cents,
+                      shopfront.shop.currency,
+                    )}
                   </span>
                 </button>
               ))}
@@ -585,7 +601,12 @@ export default function BookingPage(props: BookingPageProps) {
               <strong>{selectedService.name}</strong>
               <em>{selectedService.duration_minutes} minutes</em>
             </span>
-            <strong>${(selectedService.price_cents / 100).toFixed(0)}</strong>
+            <strong>
+              {formatMoney(
+                selectedService.price_cents,
+                shopfront.shop.currency,
+              )}
+            </strong>
           </div>
           <div className="summary-item">
             <span className="summary-icon">
@@ -611,7 +632,12 @@ export default function BookingPage(props: BookingPageProps) {
               <strong>Total</strong>
               <small>Pay at the salon</small>
             </span>
-            <strong>${(selectedService.price_cents / 100).toFixed(0)}</strong>
+            <strong>
+              {formatMoney(
+                selectedService.price_cents,
+                shopfront.shop.currency,
+              )}
+            </strong>
           </div>
           {bookingError && <p className="booking-error">{bookingError}</p>}
           {showDetails ? (

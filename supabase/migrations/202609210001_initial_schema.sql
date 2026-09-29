@@ -12,8 +12,13 @@ create table public.shops (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
   name text not null check (char_length(name) between 2 and 100),
-  slug text not null unique check (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'),
+  slug text not null unique
+    check (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$')
+    check (slug not in ('api', 'auth', 'book', 'dashboard', 'home', 'login')),
   timezone text not null default 'America/Los_Angeles',
+  currency text not null default 'USD' check (
+    currency in ('USD', 'CAD', 'GBP', 'EUR', 'AUD', 'NZD')
+  ),
   address text,
   city text,
   state text,

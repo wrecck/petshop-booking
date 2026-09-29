@@ -8,8 +8,6 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<"login" | "signup">("login");
-  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -22,31 +20,13 @@ export default function LoginPage() {
 
     try {
       const supabase = createClient();
-      if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { full_name: fullName },
-            emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
-          },
-        });
-        if (error) throw error;
-        if (data.session) {
-          router.push("/dashboard");
-          router.refresh();
-          return;
-        }
-        setMessage("Check your email to confirm your account, then sign in.");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        router.push("/dashboard");
-        router.refresh();
-      }
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      router.push("/dashboard");
+      router.refresh();
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Unable to continue.",
@@ -66,25 +46,11 @@ export default function LoginPage() {
       </Link>
       <div className="auth-card">
         <p className="eyebrow">For pet businesses</p>
-        <h1>{mode === "login" ? "Welcome back." : "Open your booking page."}</h1>
+        <h1>Welcome back.</h1>
         <p className="auth-intro">
-          {mode === "login"
-            ? "Sign in to manage your appointments and shop."
-            : "Create your owner account. Your first booking page is ready in a few clicks."}
+          Sign in to manage your appointments and shop.
         </p>
         <form onSubmit={submit}>
-          {mode === "signup" && (
-            <label>
-              Your name
-              <input
-                required
-                value={fullName}
-                onChange={(event) => setFullName(event.target.value)}
-                placeholder="Jamie Rivera"
-                autoComplete="name"
-              />
-            </label>
-          )}
           <label>
             Email
             <input
@@ -105,30 +71,18 @@ export default function LoginPage() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="At least 8 characters"
-              autoComplete={mode === "login" ? "current-password" : "new-password"}
+              autoComplete="current-password"
             />
           </label>
           {message && <p className="auth-message">{message}</p>}
           <button className="primary-button" disabled={loading}>
-            {loading
-              ? "Please wait…"
-              : mode === "login"
-                ? "Sign in"
-                : "Create account"}
+            {loading ? "Please wait…" : "Sign in"}
             {!loading && <ArrowRight size={17} />}
           </button>
         </form>
-        <button
-          className="auth-switch"
-          onClick={() => {
-            setMode(mode === "login" ? "signup" : "login");
-            setMessage("");
-          }}
-        >
-          {mode === "login"
-            ? "New here? Create an owner account"
-            : "Already have an account? Sign in"}
-        </button>
+        <Link className="auth-switch" href="/#signup">
+          New tenant? Create your pet shop
+        </Link>
       </div>
     </main>
   );

@@ -8,6 +8,7 @@ export const demoShopfront: Shopfront = {
     name: "Paws & Co.",
     slug: DEMO_SHOP_SLUG,
     timezone: "America/Los_Angeles",
+    currency: "USD",
     address: "123 Maple Street",
     city: "Portland",
     state: "OR",
