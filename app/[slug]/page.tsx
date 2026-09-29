@@ -1,4 +1,4 @@
-import BookingPage from "@/app/page";
+import BookingPage from "@/components/booking-page";
 
 export default async function TenantBookingPage({
   params,
