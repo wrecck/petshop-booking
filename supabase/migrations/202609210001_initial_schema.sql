@@ -19,6 +19,24 @@ create table public.shops (
   currency text not null default 'USD' check (
     currency in ('USD', 'CAD', 'GBP', 'EUR', 'AUD', 'NZD', 'PHP')
   ),
+  theme_preset text not null default 'sage' check (
+    theme_preset in ('sage', 'ocean', 'sunset', 'charcoal', 'custom')
+  ),
+  primary_color text not null default '#2f6256'
+    check (primary_color ~ '^#[0-9A-Fa-f]{6}$'),
+  accent_color text not null default '#a35f38'
+    check (accent_color ~ '^#[0-9A-Fa-f]{6}$'),
+  background_color text not null default '#fbf8f0'
+    check (background_color ~ '^#[0-9A-Fa-f]{6}$'),
+  surface_color text not null default '#fffefa'
+    check (surface_color ~ '^#[0-9A-Fa-f]{6}$'),
+  text_color text not null default '#173c35'
+    check (text_color ~ '^#[0-9A-Fa-f]{6}$'),
+  hero_title text not null default
+    'Let’s get your best friend looking their best.',
+  hero_subtitle text not null default
+    'Pick a service and a time that works for you. We’ll handle the rest.',
+  show_ratings boolean not null default true,
   address text,
   city text,
   state text,
@@ -27,6 +45,23 @@ create table public.shops (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+create table public.shop_pages (
+  id uuid primary key default gen_random_uuid(),
+  shop_id uuid not null references public.shops(id) on delete cascade,
+  title text not null check (char_length(title) between 2 and 120),
+  slug text not null check (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'),
+  content text not null default '',
+  published boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (shop_id, slug),
+  check (slug not in ('pages', 'book', 'login', 'dashboard', 'api', 'auth', 'home'))
+);
+
+create index shop_pages_shop_id_idx
+  on public.shop_pages (shop_id, sort_order);
 
 create table public.services (
   id uuid primary key default gen_random_uuid(),
@@ -118,6 +153,7 @@ create index appointments_shop_starts_at_idx
 create index appointments_customer_idx on public.appointments (customer_id);
 
 alter table public.shops enable row level security;
+alter table public.shop_pages enable row level security;
 alter table public.services enable row level security;
 alter table public.staff enable row level security;
 alter table public.staff_services enable row level security;
@@ -133,6 +169,30 @@ create policy "Owners manage their shops"
   on public.shops for all to authenticated
   using (owner_id = auth.uid())
   with check (owner_id = auth.uid());
+
+create policy "Public can view published shop pages"
+  on public.shop_pages for select
+  using (
+    published
+    and exists (
+      select 1 from public.shops
+      where shops.id = shop_pages.shop_id and shops.active
+    )
+  );
+create policy "Owners manage shop pages"
+  on public.shop_pages for all to authenticated
+  using (
+    exists (
+      select 1 from public.shops
+      where shops.id = shop_pages.shop_id and shops.owner_id = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.shops
+      where shops.id = shop_pages.shop_id and shops.owner_id = auth.uid()
+    )
+  );
 
 create policy "Public can view active services"
   on public.services for select

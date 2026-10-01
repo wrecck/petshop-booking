@@ -1,3 +1,4 @@
+import { DEFAULT_BRANDING } from "@/lib/branding";
 import type { Shopfront } from "@/lib/types";
 
 export const DEMO_SHOP_SLUG = "paws-and-co";
@@ -9,6 +10,7 @@ export const demoShopfront: Shopfront = {
     slug: DEMO_SHOP_SLUG,
     timezone: "America/Los_Angeles",
     currency: "USD",
+    ...DEFAULT_BRANDING,
     address: "123 Maple Street",
     city: "Portland",
     state: "OR",
@@ -56,6 +58,18 @@ export const demoShopfront: Shopfront = {
       role: "Groomer & puppy specialist",
       initials: "SL",
       color: "blue",
+    },
+  ],
+  pages: [
+    {
+      id: "40000000-0000-4000-8000-000000000001",
+      shop_id: "10000000-0000-4000-8000-000000000001",
+      title: "About us",
+      slug: "about",
+      content:
+        "We are a neighborhood grooming studio focused on calm visits and healthy coats.\n\nStop by anytime during open hours or book online in a few taps.",
+      published: true,
+      sort_order: 1,
     },
   ],
 };

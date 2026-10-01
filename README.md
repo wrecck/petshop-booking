@@ -15,6 +15,7 @@ Supabase.
 - Owner dashboard with appointments, customers, and status updates
 - Groomer management with per-service assignments
 - Dedicated service editor for names, prices, durations, and visibility
+- Branding page for themes, colors, hero copy, and custom info pages
 - Tenant settings for shop identity, booking URL, owner, and currency, including PHP
 - PostgreSQL row-level security for tenant isolation
 - Responsive desktop and mobile layouts
@@ -93,8 +94,9 @@ The dashboard will show the public URL:
 
 Use **Groomers** in the dashboard navigation to add or edit groomers and select
 the services each person can perform. Use **Services** to edit names, prices,
-durations, and visibility. Use **Settings** to manage the pet shop name, public
-slug, currency, timezone, contact details, and owner account.
+durations, and visibility. Use **Branding** to customize booking page colors,
+themes, hero copy, and custom info pages. Use **Settings** to manage the pet
+shop name, public slug, currency, timezone, contact details, and owner account.
 
 The onboarding function creates:
 

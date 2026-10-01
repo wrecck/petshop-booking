@@ -1,3 +1,5 @@
+import type { BrandingTheme, ShopPage } from "@/lib/branding";
+
 export type Shop = {
   id: string;
   name: string;
@@ -8,7 +10,7 @@ export type Shop = {
   city: string | null;
   state: string | null;
   phone: string | null;
-};
+} & BrandingTheme;
 
 export type Service = {
   id: string;
@@ -32,6 +34,7 @@ export type Shopfront = {
   shop: Shop;
   services: Service[];
   staff: Staff[];
+  pages: ShopPage[];
 };
 
 export type AvailabilitySlot = {

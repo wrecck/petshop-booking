@@ -16,6 +16,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { brandingStyle, DEFAULT_BRANDING } from "@/lib/branding";
 import { demoShopfront, DEMO_SHOP_SLUG } from "@/lib/demo-data";
 import type { AvailabilitySlot, Shopfront, Staff } from "@/lib/types";
 
@@ -146,7 +147,11 @@ export default function BookingPage(props: BookingPageProps) {
       })
       .then((data) => {
         if (!active || data.services.length === 0) return;
-        setShopfront(data);
+        setShopfront({
+          ...data,
+          pages: data.pages ?? [],
+          shop: { ...DEFAULT_BRANDING, ...data.shop },
+        });
         setServiceId(data.services[0].id);
         setSelectedSlot(null);
         setSlotsLoading(true);
@@ -250,9 +255,27 @@ export default function BookingPage(props: BookingPageProps) {
     }
   }
 
+  const theme = {
+    ...DEFAULT_BRANDING,
+    theme_preset: shopfront.shop.theme_preset ?? DEFAULT_BRANDING.theme_preset,
+    primary_color:
+      shopfront.shop.primary_color ?? DEFAULT_BRANDING.primary_color,
+    accent_color: shopfront.shop.accent_color ?? DEFAULT_BRANDING.accent_color,
+    background_color:
+      shopfront.shop.background_color ?? DEFAULT_BRANDING.background_color,
+    surface_color:
+      shopfront.shop.surface_color ?? DEFAULT_BRANDING.surface_color,
+    text_color: shopfront.shop.text_color ?? DEFAULT_BRANDING.text_color,
+    hero_title: shopfront.shop.hero_title || DEFAULT_BRANDING.hero_title,
+    hero_subtitle:
+      shopfront.shop.hero_subtitle || DEFAULT_BRANDING.hero_subtitle,
+    show_ratings: shopfront.shop.show_ratings ?? true,
+  };
+  const infoPages = shopfront.pages?.filter((page) => page.published) ?? [];
+
   if (confirmed) {
     return (
-      <main className="confirmation-page">
+      <main className="confirmation-page" style={brandingStyle(theme)}>
         <div className="confirmation-card">
           <div className="success-mark">
             <Check size={34} strokeWidth={2.5} />
@@ -299,15 +322,28 @@ export default function BookingPage(props: BookingPageProps) {
   }
 
   return (
-    <main>
+    <main style={brandingStyle(theme)}>
       <header className="site-header">
-        <a className="brand" href="#" aria-label="Paws and Company home">
+        <Link
+          className="brand"
+          href={`/${shopSlug}`}
+          aria-label={`${shopfront.shop.name} home`}
+        >
           <span className="brand-mark">
             <PawPrint size={20} fill="currentColor" />
           </span>
           <span>{shopfront.shop.name}</span>
-        </a>
+        </Link>
         <div className="header-meta">
+          {infoPages.length > 0 && (
+            <nav className="shop-page-nav" aria-label="Shop pages">
+              {infoPages.map((page) => (
+                <Link key={page.id} href={`/${shopSlug}/pages/${page.slug}`}>
+                  {page.title}
+                </Link>
+              ))}
+            </nav>
+          )}
           <div>
             <strong>{shopfront.shop.address ?? "Online booking"}</strong>
             <span>
@@ -326,22 +362,24 @@ export default function BookingPage(props: BookingPageProps) {
       <section className="hero">
         <div>
           <p className="eyebrow">Online booking</p>
-          <h1>Let’s get your best friend looking their best.</h1>
-          <p>Pick a service and a time that works for you. We’ll handle the rest.</p>
+          <h1>{theme.hero_title}</h1>
+          <p>{theme.hero_subtitle}</p>
         </div>
-        <div className="trust-note">
-          <span className="mini-avatars">
-            <i>MR</i>
-            <i>SL</i>
-            <i>AP</i>
-          </span>
-          <span>
-            <strong>Loved by local pets</strong>
-            <small>
-              <Star size={12} fill="currentColor" /> 4.9 from 200+ visits
-            </small>
-          </span>
-        </div>
+        {theme.show_ratings && (
+          <div className="trust-note">
+            <span className="mini-avatars">
+              <i>MR</i>
+              <i>SL</i>
+              <i>AP</i>
+            </span>
+            <span>
+              <strong>Loved by local pets</strong>
+              <small>
+                <Star size={12} fill="currentColor" /> 4.9 from 200+ visits
+              </small>
+            </span>
+          </div>
+        )}
       </section>
 
       <div className="booking-layout">
