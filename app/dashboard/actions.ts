@@ -365,6 +365,187 @@ export async function updateGroomer(formData: FormData) {
   revalidatePath("/dashboard/groomers");
 }
 
+const hexColor = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
+
+export async function updateShopBranding(formData: FormData) {
+  const parsed = z
+    .object({
+      themePreset: z.enum(["sage", "ocean", "sunset", "charcoal", "custom"]),
+      primaryColor: hexColor,
+      accentColor: hexColor,
+      backgroundColor: hexColor,
+      surfaceColor: hexColor,
+      textColor: hexColor,
+      heroTitle: z.string().trim().min(4).max(160),
+      heroSubtitle: z.string().trim().min(4).max(280),
+      showRatings: z.enum(["true", "false"]),
+    })
+    .safeParse({
+      themePreset: formData.get("themePreset"),
+      primaryColor: formData.get("primaryColor"),
+      accentColor: formData.get("accentColor"),
+      backgroundColor: formData.get("backgroundColor"),
+      surfaceColor: formData.get("surfaceColor"),
+      textColor: formData.get("textColor"),
+      heroTitle: formData.get("heroTitle"),
+      heroSubtitle: formData.get("heroSubtitle"),
+      showRatings: formData.get("showRatings"),
+    });
+
+  if (!parsed.success) redirect("/dashboard/branding?error=invalid-branding");
+
+  const { supabase, shopId } = await getOwnerShopId();
+  const { error } = await supabase
+    .from("shops")
+    .update({
+      theme_preset: parsed.data.themePreset,
+      primary_color: parsed.data.primaryColor,
+      accent_color: parsed.data.accentColor,
+      background_color: parsed.data.backgroundColor,
+      surface_color: parsed.data.surfaceColor,
+      text_color: parsed.data.textColor,
+      hero_title: parsed.data.heroTitle,
+      hero_subtitle: parsed.data.heroSubtitle,
+      show_ratings: parsed.data.showRatings === "true",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", shopId);
+
+  if (error) redirect("/dashboard/branding?error=save-failed");
+  revalidatePath("/dashboard/branding");
+  revalidatePath("/dashboard", "layout");
+  redirect("/dashboard/branding?saved=branding");
+}
+
+export async function createShopPage(formData: FormData) {
+  const parsed = z
+    .object({
+      title: z.string().trim().min(2).max(120),
+      slug: z
+        .string()
+        .trim()
+        .toLowerCase()
+        .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+        .max(60)
+        .refine(
+          (slug) =>
+            !["pages", "book", "login", "dashboard", "api", "auth", "home"].includes(
+              slug,
+            ),
+        ),
+      content: z.string().trim().min(1).max(8000),
+      published: z.enum(["true", "false"]),
+    })
+    .safeParse({
+      title: formData.get("title"),
+      slug: formData.get("slug"),
+      content: formData.get("content"),
+      published: formData.get("published"),
+    });
+
+  if (!parsed.success) redirect("/dashboard/branding?error=invalid-page");
+
+  const { supabase, shopId } = await getOwnerShopId();
+  const { count } = await supabase
+    .from("shop_pages")
+    .select("*", { count: "exact", head: true })
+    .eq("shop_id", shopId);
+
+  const { error } = await supabase.from("shop_pages").insert({
+    shop_id: shopId,
+    title: parsed.data.title,
+    slug: parsed.data.slug,
+    content: parsed.data.content,
+    published: parsed.data.published === "true",
+    sort_order: (count ?? 0) + 1,
+  });
+
+  if (error) {
+    redirect(
+      `/dashboard/branding?error=${
+        error.message.toLowerCase().includes("duplicate")
+          ? "page-slug-taken"
+          : "page-save-failed"
+      }`,
+    );
+  }
+
+  revalidatePath("/dashboard/branding");
+  redirect("/dashboard/branding?saved=page");
+}
+
+export async function updateShopPage(formData: FormData) {
+  const parsed = z
+    .object({
+      pageId: z.uuid(),
+      title: z.string().trim().min(2).max(120),
+      slug: z
+        .string()
+        .trim()
+        .toLowerCase()
+        .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+        .max(60)
+        .refine(
+          (slug) =>
+            !["pages", "book", "login", "dashboard", "api", "auth", "home"].includes(
+              slug,
+            ),
+        ),
+      content: z.string().trim().min(1).max(8000),
+      published: z.enum(["true", "false"]),
+    })
+    .safeParse({
+      pageId: formData.get("pageId"),
+      title: formData.get("title"),
+      slug: formData.get("slug"),
+      content: formData.get("content"),
+      published: formData.get("published"),
+    });
+
+  if (!parsed.success) redirect("/dashboard/branding?error=invalid-page");
+
+  const { supabase, shopId } = await getOwnerShopId();
+  const { error } = await supabase
+    .from("shop_pages")
+    .update({
+      title: parsed.data.title,
+      slug: parsed.data.slug,
+      content: parsed.data.content,
+      published: parsed.data.published === "true",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", parsed.data.pageId)
+    .eq("shop_id", shopId);
+
+  if (error) {
+    redirect(
+      `/dashboard/branding?error=${
+        error.message.toLowerCase().includes("duplicate")
+          ? "page-slug-taken"
+          : "page-save-failed"
+      }`,
+    );
+  }
+
+  revalidatePath("/dashboard/branding");
+  redirect("/dashboard/branding?saved=page");
+}
+
+export async function deleteShopPage(formData: FormData) {
+  const pageId = z.uuid().safeParse(formData.get("pageId"));
+  if (!pageId.success) return;
+
+  const { supabase, shopId } = await getOwnerShopId();
+  await supabase
+    .from("shop_pages")
+    .delete()
+    .eq("id", pageId.data)
+    .eq("shop_id", shopId);
+
+  revalidatePath("/dashboard/branding");
+  redirect("/dashboard/branding?saved=page-deleted");
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();

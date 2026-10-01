@@ -15,7 +15,7 @@ export const getDashboardContext = cache(async () => {
   const { data: shop } = await supabase
     .from("shops")
     .select(
-      "id,name,slug,timezone,currency,phone,address,city,state",
+      "id,name,slug,timezone,currency,phone,address,city,state,theme_preset,primary_color,accent_color,background_color,surface_color,text_color,hero_title,hero_subtitle,show_ratings",
     )
     .eq("owner_id", user.id)
     .single();

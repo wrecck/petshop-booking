@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   ExternalLink,
   LayoutDashboard,
+  Palette,
   PawPrint,
   Scissors,
   Settings,
@@ -33,6 +34,9 @@ export function DashboardHeader({
         </Link>
         <Link href="/dashboard/services">
           <Scissors size={15} /> Services
+        </Link>
+        <Link href="/dashboard/branding">
+          <Palette size={15} /> Branding
         </Link>
         <Link href="/dashboard/settings">
           <Settings size={15} /> Settings
